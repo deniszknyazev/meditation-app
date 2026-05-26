@@ -242,7 +242,7 @@ function renderHome(el) {
       <div class="streak-flame">🔥</div>
       <div class="streak-info">
         <h3>Daily Streak</h3>
-        <p style="margin:0">${state.streak > 0 ? 'Keep it going!' : 'Start meditating today!'}</p>
+        <p style="margin:0">${state.streak > 0 ? 'Keep it going!' : 'Start today!'}</p>
       </div>
       <div class="streak-days">
         <div class="num">${state.streak}</div>
@@ -287,22 +287,6 @@ function renderHome(el) {
         </div>
       </div>
     </div>
-
-    <div class="section">
-      <div class="section-title">Today</div>
-      <div style="padding: 0 24px">
-        ${todaySessions.length === 0
-          ? `<div class="card" style="text-align:center; padding: 28px"><p>No sessions yet today.<br>Take a few minutes for yourself.</p></div>`
-          : todaySessions.map(s => `
-              <div class="card card-sm" style="margin-bottom:10px; display:flex; align-items:center; gap:12px">
-                <span style="font-size:24px">${s.icon || '🧘'}</span>
-                <div style="flex:1"><div style="font-size:14px; font-weight:600">${s.name}</div><div style="font-size:12px; color:var(--text-muted)">${s.duration} min · ${s.time}</div></div>
-                <span style="font-size:18px">✓</span>
-              </div>
-            `).join('')
-        }
-      </div>
-    </div>
   `;
 
   el.querySelectorAll('.mood-pill').forEach(btn => {
@@ -337,11 +321,11 @@ function renderBreathe(el) {
   const activePhasesCount = pat.phases.filter(p => p > 0).length;
 
   el.innerHTML = `
-    <div class="page-header">
-      <h1>Breathe</h1>
-      <p>Breathing exercises to calm your nervous system</p>
-    </div>
     <div class="breathe-container">
+      <div class="breathe-title">
+        <h1>Breathe</h1>
+        <p>Exercises to calm your nervous system</p>
+      </div>
       <div class="pattern-tabs">
         ${BREATH_PATTERNS.map(p => `
           <button class="pattern-tab ${p.id === state.breathPattern ? 'active' : ''}" data-pattern="${p.id}">
@@ -480,20 +464,22 @@ function renderMeditate(el) {
       <h1>Meditate</h1>
       <p>Guided sessions for every moment</p>
     </div>
-    <div class="meditate-list">
-      ${MEDITATIONS.map(m => `
-        <div class="med-card" data-med="${m.id}">
-          <div class="med-icon">${m.icon}</div>
-          <div class="med-info">
-            <h3>${m.name}</h3>
-            <p>${m.steps[0][1].substring(0, 60)}…</p>
-            <div class="med-meta">
-              <span class="tag ${m.tagColor}">${m.tag}</span>
-              <span class="tag">${m.duration} min</span>
+    <div class="scroll-area">
+      <div class="meditate-list">
+        ${MEDITATIONS.map(m => `
+          <div class="med-card" data-med="${m.id}">
+            <div class="med-icon">${m.icon}</div>
+            <div class="med-info">
+              <h3>${m.name}</h3>
+              <p>${m.steps[0][1].substring(0, 60)}…</p>
+              <div class="med-meta">
+                <span class="tag ${m.tagColor}">${m.tag}</span>
+                <span class="tag">${m.duration} min</span>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('')}
+        `).join('')}
+      </div>
     </div>
     ${renderMedPlayer()}
   `;
@@ -657,8 +643,8 @@ function renderJournal(el) {
     </div>
     <div class="journal-container">
       <div class="journal-new">
-        <div style="font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:10px; letter-spacing:0.5px">HOW ARE YOU FEELING?</div>
-        <div class="mood-row" id="journal-mood-row" style="padding:0; margin-bottom:14px">
+        <div style="font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.5px">HOW ARE YOU FEELING?</div>
+        <div class="mood-row" id="journal-mood-row" style="padding:0; margin-bottom:10px">
           ${MOODS.map((m, i) => `
             <button class="mood-pill ${state.journalMood === i ? 'selected' : ''}" data-jmood="${i}">
               <span class="emoji">${m.emoji}</span>
@@ -666,15 +652,18 @@ function renderJournal(el) {
             </button>
           `).join('')}
         </div>
-        <textarea class="journal-textarea" id="journal-input" placeholder="What's on your mind? There are no rules here…" maxlength="2000"></textarea>
+        <textarea class="journal-textarea" id="journal-input" placeholder="What's on your mind?" maxlength="2000"></textarea>
         <div class="journal-save-row">
           <span class="char-count" id="char-count">0 / 2000</span>
-          <button class="btn btn-primary" id="btn-save-entry">Save Entry</button>
+          <button class="btn btn-primary" style="padding:10px 20px; font-size:14px" id="btn-save-entry">Save</button>
         </div>
       </div>
-
-      <div class="journal-entries" id="journal-entries">
-        ${renderJournalEntries()}
+    </div>
+    <div class="scroll-area" style="padding-top:12px">
+      <div style="padding: 0 20px">
+        <div class="journal-entries" id="journal-entries">
+          ${renderJournalEntries()}
+        </div>
       </div>
     </div>
   `;
@@ -778,9 +767,10 @@ function renderProgress(el) {
       <h1>Progress</h1>
       <p>Your meditation journey so far</p>
     </div>
+    <div class="scroll-area">
     <div class="progress-container">
 
-      <div class="stats-grid" style="margin-bottom:24px">
+      <div class="stats-grid" style="margin-bottom:16px">
         <div class="stat-card">
           <div class="val">${state.streak}</div>
           <div class="lbl">Day Streak 🔥</div>
@@ -800,7 +790,7 @@ function renderProgress(el) {
       </div>
 
       <div class="section">
-        <div class="section-title" style="padding:0; margin-bottom:16px">This Week</div>
+        <div class="section-title" style="padding:0; margin-bottom:12px">This Week</div>
         <div class="card">
           <div class="week-grid">
             ${weekDays.map(d => `
@@ -819,7 +809,7 @@ function renderProgress(el) {
       </div>
 
       <div class="section">
-        <div class="section-title" style="padding:0; margin-bottom:16px">Mood Journal</div>
+        <div class="section-title" style="padding:0; margin-bottom:12px">Mood Journal</div>
         <div class="card mood-history">
           ${MOODS.map((m, i) => `
             <div class="mood-bar-row">
@@ -835,7 +825,7 @@ function renderProgress(el) {
       </div>
 
       <div class="section">
-        <div class="section-title" style="padding:0; margin-bottom:16px">Recent Sessions</div>
+        <div class="section-title" style="padding:0; margin-bottom:12px">Recent Sessions</div>
         <div class="card history-list">
           ${state.sessions.length === 0
             ? `<div class="empty-state" style="padding:24px"><div class="icon">🧘</div><p>Complete a session to see your history</p></div>`
@@ -852,6 +842,7 @@ function renderProgress(el) {
           }
         </div>
       </div>
+    </div>
     </div>
   `;
 }
