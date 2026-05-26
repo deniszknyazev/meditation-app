@@ -15,7 +15,7 @@
   --pink: #f97316;
   --gold: #fbbf24;
   --radius: 20px;
-  --nav-h: 58px;
+  --nav-h: 50px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -72,38 +72,27 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  justify-content: flex-end;
+  gap: 3px;
   background: none;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
   transition: color 0.2s;
   -webkit-tap-highlight-color: transparent;
-  padding: 6px 0 4px;
+  padding: 0 0 10px;
   position: relative;
 }
 .nav-btn svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   fill: none;
   stroke: currentColor;
-  transition: transform 0.15s;
+  transition: transform 0.15s, stroke 0.2s;
 }
 .nav-btn span { font-size: 10px; font-weight: 500; letter-spacing: 0.2px; }
 .nav-btn.active { color: var(--primary); }
-.nav-btn.active svg { transform: scale(1.12); }
-/* Active indicator — thin bar at top of tab */
-.nav-btn.active::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px; height: 2px;
-  border-radius: 0 0 2px 2px;
-  background: var(--primary);
-}
+.nav-btn.active svg { transform: scale(1.1); }
 
 /* ===== Typography ===== */
 h1 { font-size: 28px; font-weight: 700; line-height: 1.2; }

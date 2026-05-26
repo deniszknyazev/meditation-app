@@ -48,16 +48,23 @@ const Sound = (() => {
       nodes.push(n, out);
     }
     else if (id === 'ocean') {
+      // Use scheduled automation instead of AudioParam connections (more iOS-compatible)
       const n = mkNoise(c, 'brown');
-      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 420;
-      const lfo  = c.createOscillator(); lfo.frequency.value  = 0.07;
-      const lg   = c.createGain();       lg.gain.value        = 190;
-      const vlfo = c.createOscillator(); vlfo.frequency.value = 0.07;
-      const vg   = c.createGain();       vg.gain.value        = 0.28;
-      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
-      vlfo.connect(vg); vg.connect(out.gain);   vlfo.start();
-      n.connect(f); f.connect(out); out.gain.value = 0.55; n.start();
-      nodes.push(n, lfo, vlfo, out);
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 400;
+      n.connect(f); f.connect(out); n.start();
+      const wave = 13; // seconds per wave cycle  (≈ 0.077 Hz)
+      let t = c.currentTime;
+      out.gain.setValueAtTime(0.45, t);
+      for (let i = 0; i < 55; i++) {
+        f.frequency.linearRampToValueAtTime(680, t + wave * 0.45);
+        out.gain.linearRampToValueAtTime(0.82, t + wave * 0.45);
+        f.frequency.linearRampToValueAtTime(160, t + wave * 0.85);
+        out.gain.linearRampToValueAtTime(0.18, t + wave * 0.85);
+        f.frequency.linearRampToValueAtTime(400, t + wave);
+        out.gain.linearRampToValueAtTime(0.45, t + wave);
+        t += wave;
+      }
+      nodes.push(n, f, out);
     }
     else if (id === 'forest') {
       const w  = mkNoise(c, 'white');
@@ -84,16 +91,24 @@ const Sound = (() => {
       nodes.push(w, lfo, bo, out, { stop: () => { alive = false; } });
     }
     else if (id === 'fire') {
-      const n  = mkNoise(c, 'brown');
-      const f  = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 950;
-      const lfo  = c.createOscillator(); lfo.type  = 'sawtooth'; lfo.frequency.value  = 2.8;
-      const lg   = c.createGain();       lg.gain.value   = 380;
-      const vlfo = c.createOscillator(); vlfo.frequency.value = 4.5;
-      const vg   = c.createGain();       vg.gain.value   = 0.11;
-      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
-      vlfo.connect(vg); vg.connect(out.gain);   vlfo.start();
-      n.connect(f); f.connect(out); out.gain.value = 0.45; n.start();
-      nodes.push(n, lfo, vlfo, out);
+      // Crackling fire: schedule irregular amplitude bursts with a recurring batch scheduler
+      const n = mkNoise(c, 'brown');
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+      n.connect(f); f.connect(out); out.gain.value = 0.42; n.start();
+      let alive = true;
+      const schedFire = () => {
+        if (!alive) return;
+        const now = c.currentTime;
+        let t = now;
+        while (t < now + 4) {
+          const dur = 0.06 + Math.random() * 0.16;
+          out.gain.linearRampToValueAtTime(0.18 + Math.random() * 0.52, t + dur);
+          t += dur;
+        }
+        chirpTid = setTimeout(schedFire, 3200);
+      };
+      schedFire();
+      nodes.push(n, f, out, { stop: () => { alive = false; } });
     }
     else if (id === 'space') {
       [[55, 0.18], [82.4, 0.09], [57.3, 0.11]].forEach(([freq, gain]) => {
