@@ -2,6 +2,115 @@
    SERENE — Meditation App
    ============================ */
 
+// ── Sound Engine (Web Audio API) ─────────────────────────────────
+const Sound = (() => {
+  let ctx = null, nodes = [], chirpTid = null;
+
+  const init = () => {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  };
+
+  const stop = () => {
+    clearTimeout(chirpTid);
+    nodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch {} });
+    nodes = [];
+  };
+
+  const mkNoise = (c, type = 'white') => {
+    const sr = c.sampleRate, len = sr * 4;
+    const buf = c.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    if (type === 'brown') {
+      let l = 0;
+      for (let i = 0; i < len; i++) { const w = Math.random()*2-1; d[i] = l = (l + .02*w)/1.02 * 3.5; }
+    } else {
+      for (let i = 0; i < len; i++) d[i] = Math.random()*2-1;
+    }
+    const s = c.createBufferSource(); s.buffer = buf; s.loop = true; return s;
+  };
+
+  const play = (id) => {
+    stop();
+    if (id === 'none') return;
+    const c = init();
+    const out = c.createGain(); out.connect(c.destination);
+
+    if (id === 'rain') {
+      const n = mkNoise(c, 'white');
+      const f1 = c.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = 2600; f1.Q.value = 0.6;
+      const f2 = c.createBiquadFilter(); f2.type = 'lowpass';  f2.frequency.value = 380;
+      const g1 = c.createGain(); g1.gain.value = 0.14;
+      const g2 = c.createGain(); g2.gain.value = 0.18;
+      n.connect(f1); f1.connect(g1); g1.connect(out);
+      n.connect(f2); f2.connect(g2); g2.connect(out);
+      out.gain.value = 1; n.start();
+      nodes.push(n, out);
+    }
+    else if (id === 'ocean') {
+      const n = mkNoise(c, 'brown');
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 420;
+      const lfo  = c.createOscillator(); lfo.frequency.value  = 0.07;
+      const lg   = c.createGain();       lg.gain.value        = 190;
+      const vlfo = c.createOscillator(); vlfo.frequency.value = 0.07;
+      const vg   = c.createGain();       vg.gain.value        = 0.28;
+      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+      vlfo.connect(vg); vg.connect(out.gain);   vlfo.start();
+      n.connect(f); f.connect(out); out.gain.value = 0.55; n.start();
+      nodes.push(n, lfo, vlfo, out);
+    }
+    else if (id === 'forest') {
+      const w  = mkNoise(c, 'white');
+      const f  = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 650; f.Q.value = 2.5;
+      const wg = c.createGain(); wg.gain.value = 0.065;
+      const lfo = c.createOscillator(); lfo.frequency.value = 0.13;
+      const lg  = c.createGain();        lg.gain.value       = 0.028;
+      lfo.connect(lg); lg.connect(wg.gain); lfo.start();
+      w.connect(f); f.connect(wg); wg.connect(out); out.gain.value = 1.4; w.start();
+      // Bird chirps
+      const bo = c.createOscillator(); bo.type = 'sine'; bo.frequency.value = 1400;
+      const bg = c.createGain(); bg.gain.value = 0;
+      bo.connect(bg); bg.connect(out); bo.start();
+      let alive = true;
+      const chirp = () => {
+        if (!alive) return;
+        bo.frequency.setValueAtTime(1100 + Math.random()*700, c.currentTime);
+        bg.gain.cancelScheduledValues(c.currentTime);
+        bg.gain.setValueAtTime(0.055, c.currentTime);
+        bg.gain.linearRampToValueAtTime(0, c.currentTime + 0.22);
+        chirpTid = setTimeout(chirp, 1400 + Math.random()*2600);
+      };
+      chirpTid = setTimeout(chirp, 700);
+      nodes.push(w, lfo, bo, out, { stop: () => { alive = false; } });
+    }
+    else if (id === 'fire') {
+      const n  = mkNoise(c, 'brown');
+      const f  = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 950;
+      const lfo  = c.createOscillator(); lfo.type  = 'sawtooth'; lfo.frequency.value  = 2.8;
+      const lg   = c.createGain();       lg.gain.value   = 380;
+      const vlfo = c.createOscillator(); vlfo.frequency.value = 4.5;
+      const vg   = c.createGain();       vg.gain.value   = 0.11;
+      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+      vlfo.connect(vg); vg.connect(out.gain);   vlfo.start();
+      n.connect(f); f.connect(out); out.gain.value = 0.45; n.start();
+      nodes.push(n, lfo, vlfo, out);
+    }
+    else if (id === 'space') {
+      [[55, 0.18], [82.4, 0.09], [57.3, 0.11]].forEach(([freq, gain]) => {
+        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+        const g = c.createGain(); g.gain.value = gain;
+        o.connect(g); g.connect(out); o.start(); nodes.push(o);
+      });
+      const trem = c.createOscillator(); trem.frequency.value = 0.17;
+      const tg   = c.createGain();       tg.gain.value        = 0.06;
+      trem.connect(tg); tg.connect(out.gain); trem.start();
+      out.gain.value = 0.2; nodes.push(trem, out);
+    }
+  };
+
+  return { play, stop };
+})();
+
 // ── Storage helpers ──────────────────────────────────────────────
 const store = {
   get: (k, def = null) => { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : def; } catch { return def; } },
@@ -537,7 +646,9 @@ function wirePlayer() {
       state.ambient = btn.dataset.amb;
       store.set('ambient', state.ambient);
       document.querySelectorAll('.ambient-btn').forEach(b => b.classList.toggle('active', b.dataset.amb === state.ambient));
-      showToast(state.ambient === 'none' ? 'Silent mode' : `${btn.querySelector('.amb-icon').textContent} ${btn.textContent.trim().split('\n').pop().trim()} selected`);
+      Sound.play(state.ambient);
+      const label = btn.textContent.trim().split('\n').pop().trim();
+      showToast(state.ambient === 'none' ? '🔇 Silent mode' : `${btn.querySelector('.amb-icon').textContent} ${label} playing`);
     });
   });
 }
@@ -619,6 +730,7 @@ function completeMeditation(med) {
 }
 
 function closeMedPlayer() {
+  Sound.stop();
   clearInterval(state.medTimerInterval);
   state.medActive = null;
   state.medElapsed = 0;
