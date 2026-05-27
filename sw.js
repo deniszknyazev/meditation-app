@@ -1,4 +1,4 @@
-const CACHE = 'serene-v4';
+const CACHE = 'serene-v5';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json'];
 
 self.addEventListener('install', e => e.waitUntil(

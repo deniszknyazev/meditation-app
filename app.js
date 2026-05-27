@@ -23,7 +23,7 @@ const Sound = (() => {
     const buf = c.createBuffer(1, len, sr), d = buf.getChannelData(0);
     if (type === 'brown') {
       let l = 0;
-      for (let i = 0; i < len; i++) { const w = Math.random()*2-1; d[i] = l = (l + .02*w)/1.02 * 3.5; }
+      for (let i = 0; i < len; i++) { const w = Math.random()*2-1; d[i] = (l = (l + .02*w)/1.02) * 3.5; }
     } else {
       for (let i = 0; i < len; i++) d[i] = Math.random()*2-1;
     }
@@ -123,7 +123,22 @@ const Sound = (() => {
     }
   };
 
-  return { play, stop };
+  // Short tonal cue — used by breathing exercises for phase transitions
+  const tone = (f0, f1, dur, vol = 0.13) => {
+    const c = init();
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f0, c.currentTime);
+    o.frequency.linearRampToValueAtTime(f1, c.currentTime + dur * 0.75);
+    g.gain.setValueAtTime(0, c.currentTime);
+    g.gain.linearRampToValueAtTime(vol, c.currentTime + 0.04);
+    g.gain.setValueAtTime(vol, c.currentTime + dur * 0.55);
+    g.gain.linearRampToValueAtTime(0, c.currentTime + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + dur + 0.05);
+  };
+
+  return { play, stop, tone };
 })();
 
 // ── Storage helpers ──────────────────────────────────────────────
@@ -559,6 +574,11 @@ function runBreathPhase(el) {
 
   if (phaseLabel) phaseLabel.textContent = phaseName;
   if (instr) instr.textContent = phaseName === 'Inhale' ? 'Breathe in slowly...' : phaseName === 'Exhale' ? 'Breathe out slowly...' : 'Hold...';
+
+  // Audio cue: rising tone = inhale, falling tone = exhale, neutral = hold
+  if      (phaseName === 'Inhale') Sound.tone(330, 528, 0.55, 0.14);
+  else if (phaseName === 'Exhale') Sound.tone(528, 264, 0.55, 0.14);
+  else                             Sound.tone(396, 396, 0.30, 0.08);
   if (cyclesLabel) cyclesLabel.textContent = `Cycle ${state.breathCycles + 1}`;
 
   // Countdown
